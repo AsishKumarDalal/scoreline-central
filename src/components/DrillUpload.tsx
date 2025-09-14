@@ -1,296 +1,241 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { Upload, CheckCircle, AlertCircle, Play } from 'lucide-react';
 import axios from 'axios';
 
-interface DrillData {
-  title: string;
-  description: string;
-  category: string;
-  difficulty: string;
-  file: File | null;
-}
-
-interface UploadResponse {
-  success: boolean;
-  drillId: string;
-  analysisScore: number;
-  cheatDetection: {
-    detected: boolean;
-    confidence: number;
-    reasons: string[];
-  };
-  recommendations: string[];
-}
-
-const DrillUpload: React.FC = () => {
-  const [drillData, setDrillData] = useState<DrillData>({
-    title: '',
-    description: '',
-    category: '',
-    difficulty: '',
-    file: null
-  });
+const DrillUpload = () => {
+  const [drillData, setDrillData] = useState({ file: null });
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState<UploadResponse | null>(null);
-  const { toast } = useToast();
+  const [uploadResult, setUploadResult] = useState(null);
 
-  const categories = ['Shooting', 'Dribbling', 'Passing', 'Defending', 'Goalkeeping', 'Fitness'];
-  const difficulties = ['Beginner', 'Intermediate', 'Advanced', 'Professional'];
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e) => {
     const file = e.target.files?.[0] || null;
-    setDrillData(prev => ({ ...prev, file }));
+    setDrillData((prev) => ({ ...prev, file }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!drillData.file) {
-      toast({
-        title: "No File Selected",
-        description: "Please select a video file to upload.",
-        variant: "destructive",
-      });
+      alert('Please select a video file to upload.');
       return;
     }
 
     setIsUploading(true);
-    
+
     try {
-      // Mock API call - replace with your actual endpoint
       const formData = new FormData();
       formData.append('video', drillData.file);
-      formData.append('title', drillData.title);
-      formData.append('description', drillData.description);
-      formData.append('category', drillData.category);
-      formData.append('difficulty', drillData.difficulty);
 
-      // Simulate API response after 2 seconds
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock response data
-      const mockResponse: UploadResponse = {
-        success: true,
-        drillId: `drill_${Date.now()}`,
-        analysisScore: Math.floor(Math.random() * 30) + 70, // 70-100
-        cheatDetection: {
-          detected: Math.random() < 0.2, // 20% chance of detecting issues
-          confidence: Math.floor(Math.random() * 40) + 60,
-          reasons: Math.random() < 0.2 ? ['Unusual movement patterns detected', 'Inconsistent ball tracking'] : []
-        },
-        recommendations: [
-          'Focus on ball control during turns',
-          'Improve shooting accuracy',
-          'Work on first touch technique'
-        ]
-      };
-
-      setUploadResult(mockResponse);
-      
-      toast({
-        title: "Upload Successful",
-        description: "Your drill has been analyzed and uploaded successfully!",
-        variant: "default",
+      const response = await axios.post('http://localhost:3000/analyze', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 2 * 60 * 1000,
       });
 
-      // Reset form
-      setDrillData({
-        title: '',
-        description: '',
-        category: '',
-        difficulty: '',
-        file: null
-      });
+      const data = response.data;
 
+      if (data) {
+        setUploadResult(data);
+        alert('Upload successful!');
+        setDrillData({ file: null });
+      } else {
+        alert('Upload failed: Analysis unsuccessful');
+      }
     } catch (error) {
       console.error('Upload error:', error);
-      toast({
-        title: "Upload Failed",
-        description: "There was an error uploading your drill. Please try again.",
-        variant: "destructive",
-      });
+      alert('Upload failed: Network or server error.');
     } finally {
       setIsUploading(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="title">Drill Title</Label>
-            <Input
-              id="title"
-              placeholder="e.g., Speed Dribbling Practice"
-              value={drillData.title}
-              onChange={(e) => setDrillData(prev => ({ ...prev, title: e.target.value }))}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
-            <Select
-              onValueChange={(value) => setDrillData(prev => ({ ...prev, category: value }))}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="difficulty">Difficulty Level</Label>
-            <Select
-              onValueChange={(value) => setDrillData(prev => ({ ...prev, difficulty: value }))}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select difficulty" />
-              </SelectTrigger>
-              <SelectContent>
-                {difficulties.map((difficulty) => (
-                  <SelectItem key={difficulty} value={difficulty}>
-                    {difficulty}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="video">Video File</Label>
-            <Input
-              id="video"
-              type="file"
-              accept="video/*"
-              onChange={handleFileChange}
-              required
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
-            placeholder="Describe the drill, objectives, and key points to focus on..."
-            value={drillData.description}
-            onChange={(e) => setDrillData(prev => ({ ...prev, description: e.target.value }))}
-            rows={4}
+    <div style={{ maxWidth: 700, margin: 'auto', fontFamily: 'Arial, sans-serif' }}>
+      <h2>Upload Drill Video</h2>
+      <form onSubmit={handleSubmit} style={{ marginBottom: 30 }}>
+        <div style={{ marginBottom: 15 }}>
+          <label htmlFor="videoFile" style={{ display: 'block', marginBottom: 5 }}>
+            Video File
+          </label>
+          <input
+            id="videoFile"
+            type="file"
+            accept="video/*"
+            onChange={handleFileChange}
+            disabled={isUploading}
             required
+            style={{ padding: 5, fontSize: 16 }}
           />
         </div>
-
-        <Button
+        <button
           type="submit"
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-button"
           disabled={isUploading}
+          style={{
+            padding: '10px 20px',
+            fontSize: 16,
+            cursor: isUploading ? 'not-allowed' : 'pointer',
+            backgroundColor: isUploading ? '#ccc' : '#007bff',
+            border: 'none',
+            color: 'white',
+            borderRadius: 4,
+          }}
         >
-          {isUploading ? (
-            <>
-              <Upload className="w-4 h-4 mr-2 animate-spin" />
-              Uploading & Analyzing...
-            </>
-          ) : (
-            <>
-              <Upload className="w-4 h-4 mr-2" />
-              Upload Drill
-            </>
-          )}
-        </Button>
+          {isUploading ? 'Uploading...' : 'Upload Drill'}
+        </button>
       </form>
 
-      {/* Analysis Results */}
       {uploadResult && (
-        <Card className="shadow-card border-success">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-success">
-              <CheckCircle className="w-5 h-5" />
-              <span>Analysis Complete</span>
-            </CardTitle>
-            <CardDescription>
-              Your drill has been processed and analyzed
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-secondary rounded-lg">
-                <div className="text-2xl font-bold text-primary">{uploadResult.analysisScore}%</div>
-                <div className="text-sm text-muted-foreground">Performance Score</div>
-              </div>
-              
-              <div className="text-center p-4 bg-secondary rounded-lg">
-                <div className="flex items-center justify-center space-x-2">
-                  {uploadResult.cheatDetection.detected ? (
-                    <>
-                      <AlertCircle className="w-5 h-5 text-warning" />
-                      <Badge variant="secondary" className="bg-warning text-warning-foreground">
-                        Issues Detected
-                      </Badge>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-5 h-5 text-success" />
-                      <Badge variant="secondary" className="bg-success text-success-foreground">
-                        Clean Performance
-                      </Badge>
-                    </>
-                  )}
-                </div>
-                <div className="text-sm text-muted-foreground mt-1">Cheat Detection</div>
-              </div>
-              
-              <div className="text-center p-4 bg-secondary rounded-lg">
-                <div className="text-2xl font-bold text-primary">{uploadResult.recommendations.length}</div>
-                <div className="text-sm text-muted-foreground">Recommendations</div>
-              </div>
-            </div>
+        <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: 20, backgroundColor: '#f9f9f9' }}>
+          <h3>Analysis Result</h3>
 
-            {uploadResult.cheatDetection.detected && (
-              <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
-                <h4 className="font-semibold text-warning mb-2">Performance Issues Detected</h4>
-                <ul className="space-y-1">
-                  {uploadResult.cheatDetection.reasons.map((reason, index) => (
-                    <li key={index} className="text-sm text-muted-foreground flex items-center space-x-2">
-                      <AlertCircle className="w-3 h-3" />
-                      <span>{reason}</span>
-                    </li>
-                  ))}
+          <p><strong>Message:</strong> {uploadResult.message ?? 'N/A'}</p>
+          <p><strong>Analysis Status:</strong> {uploadResult.response?.analysis_status ?? 'N/A'}</p>
+          <p><strong>Analysis Timestamp:</strong> {uploadResult.response?.analysis_timestamp ?? 'N/A'}</p>
+          <p>
+            <strong>Download URL:</strong>{' '}
+            {uploadResult.response?.download_url ? (
+              <a href={uploadResult.response.download_url} target="_blank" rel="noreferrer">
+                {uploadResult.response.download_url}
+              </a>
+            ) : 'N/A'}
+          </p>
+
+          <h4>Player Analysis</h4>
+          <div style={{ paddingLeft: 20 }}>
+            <h5>Comparison to Standards</h5>
+            <ul>
+              <li>Elite Jump Threshold: {uploadResult.response?.player_analysis?.comparison_to_standards?.elite_jump_threshold ?? 'N/A'}</li>
+              <li>Elite Speed Threshold: {uploadResult.response?.player_analysis?.comparison_to_standards?.elite_speed_threshold ?? 'N/A'}</li>
+              <li>Player Jump Percentile: {uploadResult.response?.player_analysis?.comparison_to_standards?.player_jump_percentile ?? 'N/A'}</li>
+              <li>Player Speed Percentile: {uploadResult.response?.player_analysis?.comparison_to_standards?.player_speed_percentile?.toFixed(2) ?? 'N/A'}</li>
+            </ul>
+
+            <h5>Detailed Metrics</h5>
+            <h6>Agility Analysis</h6>
+            <ul>
+              <li>Balance Rating: {uploadResult.response?.player_analysis?.detailed_metrics?.agility_analysis?.balance_rating?.toFixed(2) ?? 'N/A'}</li>
+              <li>Body Control Score: {uploadResult.response?.player_analysis?.detailed_metrics?.agility_analysis?.body_control_score?.toFixed(2) ?? 'N/A'}</li>
+              <li>Change Direction Speed: {uploadResult.response?.player_analysis?.detailed_metrics?.agility_analysis?.change_direction_speed ?? 'N/A'}</li>
+              <li>Coordination Score: {uploadResult.response?.player_analysis?.detailed_metrics?.agility_analysis?.coordination_score?.toFixed(2) ?? 'N/A'}</li>
+              <li>Flexibility Rating: {uploadResult.response?.player_analysis?.detailed_metrics?.agility_analysis?.flexibility_rating ?? 'N/A'}</li>
+              <li>Reaction Time (ms): {uploadResult.response?.player_analysis?.detailed_metrics?.agility_analysis?.reaction_time_ms ?? 'N/A'}</li>
+            </ul>
+
+            <h6>Endurance Analysis</h6>
+            <ul>
+              <li>Cardiovascular Efficiency: {uploadResult.response?.player_analysis?.detailed_metrics?.endurance_analysis?.cardiovascular_efficiency ?? 'N/A'}</li>
+              <li>Consistency Over Time: {uploadResult.response?.player_analysis?.detailed_metrics?.endurance_analysis?.consistency_over_time ?? 'N/A'}</li>
+              <li>Fatigue Resistance: {uploadResult.response?.player_analysis?.detailed_metrics?.endurance_analysis?.fatigue_resistance ?? 'N/A'}</li>
+              <li>Recovery Rate: {uploadResult.response?.player_analysis?.detailed_metrics?.endurance_analysis?.recovery_rate ?? 'N/A'}</li>
+              <li>Stamina Score: {uploadResult.response?.player_analysis?.detailed_metrics?.endurance_analysis?.stamina_score ?? 'N/A'}</li>
+            </ul>
+
+            <h6>Jump Analysis</h6>
+            <ul>
+              <li>Air Time (ms): {uploadResult.response?.player_analysis?.detailed_metrics?.jump_analysis?.air_time_ms ?? 'N/A'}</li>
+              <li>Average Jump Height (cm): {uploadResult.response?.player_analysis?.detailed_metrics?.jump_analysis?.average_jump_height_cm ?? 'N/A'}</li>
+              <li>Explosive Power Score: {uploadResult.response?.player_analysis?.detailed_metrics?.jump_analysis?.explosive_power_score ?? 'N/A'}</li>
+              <li>Jump Frequency: {uploadResult.response?.player_analysis?.detailed_metrics?.jump_analysis?.jump_frequency ?? 'N/A'}</li>
+              <li>Landing Stability: {uploadResult.response?.player_analysis?.detailed_metrics?.jump_analysis?.landing_stability ?? 'N/A'}</li>
+              <li>Leg Strength Score: {uploadResult.response?.player_analysis?.detailed_metrics?.jump_analysis?.leg_strength_score ?? 'N/A'}</li>
+              <li>Max Vertical Jump (cm): {uploadResult.response?.player_analysis?.detailed_metrics?.jump_analysis?.max_vertical_jump_cm ?? 'N/A'}</li>
+              <li>Takeoff Technique: {uploadResult.response?.player_analysis?.detailed_metrics?.jump_analysis?.takeoff_technique ?? 'N/A'}</li>
+            </ul>
+
+            <h6>Overall Rating</h6>
+            <ul>
+              <li>Athleticism Score: {uploadResult.response?.player_analysis?.detailed_metrics?.overall_rating?.athleticism_score?.toFixed(1) ?? 'N/A'}</li>
+              <li>Coach Recommendation: {uploadResult.response?.player_analysis?.detailed_metrics?.overall_rating?.coach_recommendation ?? 'N/A'}</li>
+              <li>Physical Condition: {uploadResult.response?.player_analysis?.detailed_metrics?.overall_rating?.physical_condition?.toFixed(1) ?? 'N/A'}</li>
+              <li>Potential Rating: {uploadResult.response?.player_analysis?.detailed_metrics?.overall_rating?.potential_rating?.toFixed(1) ?? 'N/A'}</li>
+              <li>Technical Ability: {uploadResult.response?.player_analysis?.detailed_metrics?.overall_rating?.technical_ability?.toFixed(1) ?? 'N/A'}</li>
+            </ul>
+
+            <h6>Shooting Analysis</h6>
+            <ul>
+              <li>Accuracy Rating: {uploadResult.response?.player_analysis?.detailed_metrics?.shooting_analysis?.accuracy_rating ?? 'N/A'}</li>
+              <li>Body Positioning Score: {uploadResult.response?.player_analysis?.detailed_metrics?.shooting_analysis?.body_positioning_score?.toFixed(2) ?? 'N/A'}</li>
+              <li>Follow Through Quality: {uploadResult.response?.player_analysis?.detailed_metrics?.shooting_analysis?.follow_through_quality?.toFixed(2) ?? 'N/A'}</li>
+              <li>Shot Power Score: {uploadResult.response?.player_analysis?.detailed_metrics?.shooting_analysis?.shot_power_score ?? 'N/A'}</li>
+              <li>Technique Consistency: {uploadResult.response?.player_analysis?.detailed_metrics?.shooting_analysis?.technique_consistency ?? 'N/A'}</li>
+            </ul>
+
+            <h6>Sprint Analysis</h6>
+            <ul>
+              <li>Acceleration Phases:
+                <ul>
+                  {(uploadResult.response?.player_analysis?.detailed_metrics?.sprint_analysis?.acceleration_phases?.length ?? 0) > 0
+                    ? uploadResult.response.player_analysis.detailed_metrics.sprint_analysis.acceleration_phases.map((phase, i) => (
+                        <li key={i}>
+                          Frame {phase.frame ?? 'N/A'}: Acceleration {phase.acceleration?.toFixed(2) ?? 'N/A'}, Speed {phase.speed?.toFixed(2) ?? 'N/A'}
+                        </li>
+                      ))
+                    : <li>N/A</li>
+                  }
                 </ul>
-              </div>
-            )}
+              </li>
+              <li>Average Speed (km/h): {uploadResult.response?.player_analysis?.detailed_metrics?.sprint_analysis?.average_speed_kmh?.toFixed(2) ?? 'N/A'}</li>
+              <li>Deceleration Control: {uploadResult.response?.player_analysis?.detailed_metrics?.sprint_analysis?.deceleration_control ?? 'N/A'}</li>
+              <li>Form Consistency: {uploadResult.response?.player_analysis?.detailed_metrics?.sprint_analysis?.form_consistency?.toFixed(2) ?? 'N/A'}</li>
+              <li>Max Speed (km/h): {uploadResult.response?.player_analysis?.detailed_metrics?.sprint_analysis?.max_speed_kmh?.toFixed(2) ?? 'N/A'}</li>
+              <li>Running Efficiency: {uploadResult.response?.player_analysis?.detailed_metrics?.sprint_analysis?.running_efficiency ?? 'N/A'}</li>
+              <li>Sprint Endurance: {uploadResult.response?.player_analysis?.detailed_metrics?.sprint_analysis?.sprint_endurance ?? 'N/A'}</li>
+              <li>Stride Frequency: {uploadResult.response?.player_analysis?.detailed_metrics?.sprint_analysis?.stride_frequency ?? 'N/A'}</li>
+              <li>Stride Length (m): {uploadResult.response?.player_analysis?.detailed_metrics?.sprint_analysis?.stride_length_m ?? 'N/A'}</li>
+            </ul>
+          </div>
 
-            <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-              <h4 className="font-semibold text-primary mb-2">Improvement Recommendations</h4>
-              <ul className="space-y-1">
-                {uploadResult.recommendations.map((rec, index) => (
-                  <li key={index} className="text-sm text-muted-foreground flex items-center space-x-2">
-                    <Play className="w-3 h-3" />
-                    <span>{rec}</span>
-                  </li>
-                ))}
+          <h4>Performance Highlights</h4>
+          <ul>
+            {/* You can safely add items here if data is available */}
+            <li>Highest Jump: {uploadResult.response?.performance_highlights?.highest_jump ?? 'N/A'}</li>
+            <li>Peak Acceleration: {uploadResult.response?.performance_highlights?.peak_acceleration ?? 'N/A'}</li>
+            <li>Sprint Sessions: {uploadResult.response?.performance_highlights?.sprint_sessions ?? 'N/A'}</li>
+            <li>Top Speed Achieved: {uploadResult.response?.performance_highlights?.top_speed_achieved ?? 'N/A'}</li>
+            <li>Total Jumps Recorded: {uploadResult.response?.performance_highlights?.total_jumps_recorded ?? 'N/A'}</li>
+          </ul>
+
+          <h4>Player Performance Summary</h4>
+          <ul>
+            <li>Areas For Improvement:
+              <ul>
+                {(uploadResult.response?.player_performance_summary?.areas_for_improvement?.length ?? 0) > 0
+                  ? uploadResult.response.player_performance_summary.areas_for_improvement.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))
+                  : <li>N/A</li>
+                }
               </ul>
-            </div>
-          </CardContent>
-        </Card>
+            </li>
+            <li>Coach Recommendation: {uploadResult.response?.player_performance_summary?.coach_recommendation ?? 'N/A'}</li>
+            <li>Key Strengths:
+              <ul>
+                {(uploadResult.response?.player_performance_summary?.key_strengths?.length ?? 0) > 0
+                  ? uploadResult.response.player_performance_summary.key_strengths.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))
+                  : <li>N/A</li>
+                }
+              </ul>
+            </li>
+            <li>Overall Grade: {uploadResult.response?.player_performance_summary?.overall_grade ?? 'N/A'}</li>
+            <li>Overall Score: {uploadResult.response?.player_performance_summary?.overall_score ?? 'N/A'}</li>
+          </ul>
+
+          <h4>Technical Analysis</h4>
+          <ul>
+            <li>Balance Control: {uploadResult.response?.technical_analysis?.balance_control ?? 'N/A'}</li>
+            <li>Body Coordination: {uploadResult.response?.technical_analysis?.body_coordination ?? 'N/A'}</li>
+            <li>Landing Technique: {uploadResult.response?.technical_analysis?.landing_technique ?? 'N/A'}</li>
+            <li>Sprint Form Consistency: {uploadResult.response?.technical_analysis?.sprint_form_consistency ?? 'N/A'}</li>
+          </ul>
+
+          <h4>Video Analysis Data</h4>
+          <ul>
+            <li>Analysis Completion Time: {uploadResult.response?.video_analysis_data?.analysis_completion_time?.toFixed(2) ?? 'N/A'} seconds</li>
+            <li>Detection Success Rate: {uploadResult.response?.video_analysis_data?.detection_success_rate ?? 'N/A'}</li>
+            <li>Number of Frames Processed: {uploadResult.response?.video_analysis_data?.num_frames_processed ?? 'N/A'}</li>
+            <li>Processing Speed (fps): {uploadResult.response?.video_analysis_data?.processing_speed_fps?.toFixed(2) ?? 'N/A'}</li>
+          </ul>
+        </div>
       )}
     </div>
   );

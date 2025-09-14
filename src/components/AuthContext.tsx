@@ -1,23 +1,9 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState } from 'react';
+import axios from 'axios';
+// Create the context
+const AuthContext = createContext(undefined);
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  position: string;
-  team: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (userData: Omit<User, 'id'> & { password: string }) => Promise<boolean>;
-  logout: () => void;
-  isAuthenticated: boolean;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
+// Custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -26,40 +12,48 @@ export const useAuth = () => {
   return context;
 };
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
+// AuthProvider component
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email, password) => {
     // Mock authentication - replace with real API call
     if (email && password) {
-      const mockUser: User = {
-        id: '1',
-        name: 'John Doe',
-        email: email,
-        position: 'Forward',
-        team: 'Eagles FC'
-      };
-      setUser(mockUser);
+      // const mockUser = {
+      //   id: '1',
+      //   name: 'John Doe',
+      //   email: email,
+      //   position: 'Forward',
+      //   team: 'Eagles FC'
+      // };
+      const response=await axios.post("http://localhost:3000/login",{
+        email,
+        password
+      })
+
+      setUser(response.data.response.email);
       return true;
     }
     return false;
   };
 
-  const signup = async (userData: Omit<User, 'id'> & { password: string }): Promise<boolean> => {
+  const signup = async (userData) => {
     // Mock signup - replace with real API call
-    if (userData.email && userData.password && userData.name) {
-      const newUser: User = {
-        id: Date.now().toString(),
-        name: userData.name,
-        email: userData.email,
-        position: userData.position,
-        team: userData.team
-      };
-      setUser(newUser);
+    const {  email, password, fullName } = userData;
+    if (email && password && fullName) {
+      // const newUser = {
+      //   id: Date.now().toString(),
+      //   name,
+      //   email,
+       
+      // };
+      const response= await axios.post("http://localhost:3000/register",{
+        email,
+        password,
+        fullName
+      })
+      
+      setUser(response.data.email);
       return true;
     }
     return false;
@@ -77,5 +71,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: !!user,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

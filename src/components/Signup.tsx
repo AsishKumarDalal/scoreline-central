@@ -7,27 +7,23 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
-interface SignupProps {
-  onSwitchToLogin: () => void;
-}
-
-const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
+const Signup = ({ onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
-    name: '',
+    fullName: '',
     email: '',
-    password: '',
-    position: '',
-    team: ''
+    password: ''
+ 
+   
   });
   const [isLoading, setIsLoading] = useState(false);
   const { signup } = useAuth();
   const { toast } = useToast();
 
-  const positions = [
-    'Goalkeeper', 'Defender', 'Midfielder', 'Forward', 'Striker', 'Winger'
-  ];
+  // const positions = [
+  //   'Goalkeeper', 'Defender', 'Midfielder', 'Forward', 'Striker', 'Winger'
+  // ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -57,7 +53,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
     }
   };
 
-  const updateFormData = (field: string, value: string) => {
+  const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -75,8 +71,8 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
               <Input
                 id="name"
                 placeholder="Enter your full name"
-                value={formData.name}
-                onChange={(e) => updateFormData('name', e.target.value)}
+                value={formData.fullName}
+                onChange={(e) => updateFormData('fullName', e.target.value)}
                 required
               />
             </div>
@@ -104,20 +100,20 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="position">Position</Label>
-              <Select onValueChange={(value) => updateFormData('position', value)} required>
-                <SelectTrigger>
+              {/* <Select onValueChange={(value) => updateFormData('position', value)} required> */}
+                {/* <SelectTrigger>
                   <SelectValue placeholder="Select your position" />
-                </SelectTrigger>
-                <SelectContent>
+                </SelectTrigger> */}
+                {/* <SelectContent>
                   {positions.map((position) => (
                     <SelectItem key={position} value={position}>
                       {position}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </SelectContent> */}
+              {/* </Select> */}
             </div>
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="team">Team</Label>
               <Input
                 id="team"
@@ -126,7 +122,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
                 onChange={(e) => updateFormData('team', e.target.value)}
                 required
               />
-            </div>
+            </div> */}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button
